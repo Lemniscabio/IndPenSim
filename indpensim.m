@@ -96,6 +96,8 @@ function [X] = indpensim(f_input, Xd, x0, h, T, solv, p, Ctrl_flags)
 N = T/h; %experiment length in samples
 h_ode = h/20; % ode solver step size (hours)
 t = 0:h:T; % time vector
+ode_opts = odeset('RelTol',1e-5,'AbsTol',1e-7,'MaxStep',h_ode);
+in_octave = exist('OCTAVE_VERSION','builtin') > 0;
 
 % creates batch structure 
 X = createBatch(h,T);
@@ -202,16 +204,28 @@ end
     
         
         %% Solver selection and calling indpensim_ode
-    if(solv==1)
-     [t_sol,y_sol] = ode45('indpensim_ode', t(k):h_ode:t(k+1), x00, [], u00,p);
-    end 
-     if(solv==2)
-          [t_sol,y_sol] = ode15s('indpensim_ode', t(k):h_ode:t(k+1), x00,[], u00, p);
-             warning off; % disables warning message for integration tolerance
-     end
-     if(solv==3)
-         [t_sol,y_sol] = ode23t('indpensim_ode', t(k):h_ode:t(k+1), x00, [], u00,p);
-     end
+    if in_octave
+        % Octave: use lsode (native stiff solver) for solv==2, ode45 otherwise
+        lsode_options('integration method', 'stiff');
+        lsode_options('relative tolerance', 1e-5);
+        lsode_options('absolute tolerance', 1e-7);
+        lsode_options('maximum step size', h_ode);
+        f_lsode = @(y,t) indpensim_ode(t,y,[],u00,p);
+        t_span = linspace(t(k), t(k+1), 21);
+        y_sol = lsode(f_lsode, x00, t_span);
+        t_sol = t_span(:);
+    else
+        if(solv==1)
+         [t_sol,y_sol] = ode45(@(t,y) indpensim_ode(t,y,[],u00,p), [t(k) t(k+1)], x00, ode_opts);
+        end
+         if(solv==2)
+              [t_sol,y_sol] = ode15s(@(t,y) indpensim_ode(t,y,[],u00,p), [t(k) t(k+1)], x00, ode_opts);
+                 warning off; % disables warning message for integration tolerance
+         end
+         if(solv==3)
+             [t_sol,y_sol] = ode23t(@(t,y) indpensim_ode(t,y,[],u00,p), [t(k) t(k+1)], x00, ode_opts);
+         end
+    end
       % Defining minimum value for all variables for numerical stability
     for n =1:1:31
     if y_sol(end,n)<=0
