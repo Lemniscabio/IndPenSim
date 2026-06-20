@@ -36,24 +36,10 @@ Batch_run_flags.Batch_length = ones(1,Num_of_Batches); % 0 - Fixed Batch length
 Batch_run_flags.Raman_spec =0*ones(1,Num_of_Batches);  % 0 - Don't Record Raman data 
                                                        % 1 - Record Raman Data
                                                        % 2-  Use Raman data to control PAA
-else  
-    % MODIFIED TO GENERATE 25 BATCHES WITH NO FAULTS (ALL ZEROS)
-    % FAULT CODES: 0=None, 1=Aeration, 2=Pressure, 3=Substrate, 4=Base, 5=Coolant, 6=All, 7=Temp sensor, 8=pH sensor
-    Batch_run_flags.Batch_fault_order_reference = zeros(1,2); % ALL 25 BATCHES ARE FAULT-FREE (CODE 0)
-    Batch_run_flags.Control_strategy = zeros(1,2); % 0 - Recipe driven (i.e Sequential batch control (SBC)) 
-                                                    % 1- Operator conntroller batches   
-    Batch_run_flags.Batch_length = ones(1,2); % 0 - Fixed Batch length
-                                               % 1 - Uneven batch length
-    % RAMAN DISABLED FOR ALL 25 BATCHES - SET TO 0 MEANS NO RAMAN DATA RECORDED
-    Batch_run_flags.Raman_spec = zeros(1,2);  % 0 - Don't Record Raman data 
-                                               % 1 - Record Raman Data
-                                               % 2-  Use Raman data to control PAA
-    
-    Num_of_Batches = size(Batch_run_flags.Batch_fault_order_reference,2);
-    Production_Phase_in_years =  (Num_of_Batches*(11+3))/Operational_days; 
-    
-end 
-Save_batch_flag = 1; % 1- save data 0 - don't save data
+else
+    [Batch_run_flags, Num_of_Batches] = get_fault_batch_run_flags();
+    Production_Phase_in_years =  (Num_of_Batches*(11+3))/Operational_days;
+end
 
 Batches_File_Name  = 'IndPenSim_V2_export_V7'; % File name for saving generated batches
 % Flags outlining Batch Operation
@@ -79,18 +65,14 @@ Num_of_Batches = Batch_no;
 
 
 %% Create output folder
-output_dir = sprintf('output_%d', Num_of_Batches);
+output_dir = fullfile(sprintf('output_%d', Num_of_Batches), 'batch_csv');
 if ~exist(output_dir, 'dir')
     mkdir(output_dir);
 end
+delete(fullfile(output_dir, 'Batch_*.csv'));
 Batches_File_Name = fullfile(output_dir, Batches_File_Name);
 
 Batch_Records= Generate_Batch_records(Raw_Batch_data,Batches_File_Name, Batch_run_flags);
-if Save_batch_flag ==1
-savename = Batches_File_Name;
-save(savename);
-clearvars -except Batch_Records Num_of_Batches Batch_start Summmary_of_campaign Raw_Batch_data
-end
 Generate_CSV_file_flag =1;
 if Generate_CSV_file_flag ==1
     All_variables = 1; 

@@ -47,9 +47,9 @@ end
 
 %turn the headers into a single comma seperated string if it is a cell
 %array, 
-header_string = headers{1};
+header_string = csv_escape_header(headers{1});
 for i = 2:length(headers)
-    header_string = [header_string,',',headers{i}];
+    header_string = [header_string,',',csv_escape_header(headers{i})];
 end
 %if the data has an offset shifting it right then blank commas must
 %be inserted to match
@@ -70,3 +70,9 @@ fclose(fid);
 % Call dlmwrite with a comma as the delimiter
 %
 dlmwrite(filename, m,'-append','delimiter',',','roffset', r,'coffset',c);
+end
+
+function escaped_header = csv_escape_header(header)
+header = strrep(header, '"', '""');
+escaped_header = ['"', header, '"'];
+end

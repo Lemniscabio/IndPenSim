@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Stray screenshots / generated plot images (the paper indPensim.pdf is kept)
+*.png
+
+# MATLAB/Octave autosave
+*.asv
+
+# Large simulation outputs (regenerable)
+*.mat
+!PAA_PLS_model.mat
+*.zip
+output_*/
+
+# Local Claude Code settings
+.claude/
